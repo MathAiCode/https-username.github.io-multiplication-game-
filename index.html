@@ -237,7 +237,17 @@
         def.style.display = 'none';
         msg.textContent = 'ممتاز يا بطل لقد انهيت المستوى الثاني بنجاك و نتيجتك ٢٠ / ٢٠';
         msg.style.display = 'block';
+        // في نهاية المستوى ٢ نخفي زر المستوى التالي
+        const nl = document.getElementById('nextLevel');
+        if (nl) nl.style.display = 'none';
       } else {
+        def.style.display = 'block';
+        msg.style.display = 'none';
+        const nl = document.getElementById('nextLevel');
+        if (nl) nl.style.display = 'inline-block';
+      }
+      document.getElementById('finish').classList.add('show');
+    } else {
         def.style.display = 'block';
         msg.style.display = 'none';
       }
@@ -314,22 +324,34 @@
     }
 
     function startLevel(level){
+      // بدء مستوى جديد
       currentLevel = level;
       matched.clear();
       score = 0;
       resetSelection();
+
+      // تحديد أزواج المرحلة
       PAIRS = (level === 1) ? LEVEL1.slice() : makeLevel2();
+
+      // إعادة ضبط الواجهة وإخفاء النافذة
+      const overlay = document.getElementById('finish');
+      overlay.classList.remove('show');
       document.getElementById('progress').style.width = '0%';
-      document.getElementById('finish').classList.remove('show');
       updateHUD();
+
+      // توليد اللوح
       render();
+
+      // تمرير تلقائي لأعلى اللوحة (مفيد للجوال)
+      const board = document.getElementById('board');
+      board.scrollTop = 0;
     }
 
     function nextLevel(){
+      // التنقل الصريح للمستوى التالي
       if (currentLevel === 1){ startLevel(2); }
-      else { // لا يوجد مستوى ثالث حتى الآن، نعيد من البداية
-        startLevel(1);
-      }
+      else { startLevel(1); }
+    }
     }
 
     // أزرار
@@ -361,7 +383,15 @@
       }
       tryNext(0);
     })();
-  </script>
+    // تأكيد ربط زر المستوى التالي (حتى لو تغيّر ترتيب السكربت)
+  (function(){
+    const bind = ()=>{
+      const btn = document.getElementById('nextLevel');
+      if (btn){ btn.onclick = ()=>{ document.getElementById('finish').classList.remove('show'); nextLevel(); }; }
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
+  })();
+</script>
 <script>
     // Auto-compact on very small viewport heights (dynamic)
     (function(){
