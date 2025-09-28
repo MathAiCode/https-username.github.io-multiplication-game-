@@ -5,21 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>التقريب للصف الثامن – طابق البطاقات</title>
   <style>
-    body { margin:0; font-family: "Noto Naskh Arabic", Arial, sans-serif; background:#0f172a; display:flex; justify-content:center; align-items:center; height:100vh; }
-    .phone { width:min(100vw,420px); aspect-ratio:9/16; background:#f8fafc; border-radius:20px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,.4); display:flex; flex-direction:column; }
-    header { background:#0ea5e9; color:#fff; padding:10px; text-align:center; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:13px; line-height:1.4; }
-    header img { max-height:60px; width:auto; object-fit:contain; margin-bottom:4px; }
-    header .subtitle { font-size:13px; font-weight:600; color:#e0f2fe; }
+    /* ---------- Responsive layout tuned for phones ---------- */
+    :root {
+      --gap: 10px;
+      --pad: 10px;
+      --card-pad: 10px;
+      --card-radius: 12px;
+      --text: 15px;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: "Noto Naskh Arabic", Arial, sans-serif;
+      background: #0f172a;
+    }
+    /* Use small viewport height to avoid mobile browser UI issues */
+    body { min-height: 100svh; display:flex; align-items:center; justify-content:center; }
+
+    .phone {
+      width: 100%;
+      max-width: 480px;            /* a bit wider for bigger phones */
+      height: 100svh;              /* fill the safe viewport height */
+      background:#f8fafc;
+      border-radius:20px;
+      overflow:hidden;             /* clip header/topbar radius */
+      box-shadow:0 8px 30px rgba(0,0,0,.4);
+      display:flex; flex-direction:column;
+    }
+
+    header { background:#0ea5e9; color:#fff; padding:10px; text-align:center; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:13px; line-height:1.35; }
+    header img { max-height:56px; width:auto; object-fit:contain; margin-bottom:4px; }
+    header .subtitle { font-size:12px; font-weight:600; color:#e0f2fe; }
 
     .topbar { display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 10px; background:#eef2f7; }
     .pill { background:#e2e8f0; border-radius:999px; padding:6px 10px; font-weight:700; font-size:13px; }
     #progressWrap{ height:6px; background:#e5e7eb; border-radius:999px; margin:0 10px 8px; overflow:hidden; }
     #progress{ height:100%; width:0%; background:#0ea5e9; transition:width .25s ease; }
 
-    .board { flex:1; display:flex; gap:10px; padding:10px; }
-    .col { flex:1; display:grid; grid-auto-rows:1fr; gap:8px; }
+    /* Make board scrollable if needed */
+    .board { flex:1; display:flex; gap:var(--gap); padding:var(--pad); overflow:auto; }
+    .col { flex:1; display:grid; grid-auto-rows:minmax(64px, 1fr); gap:var(--gap); }
 
-    .card { background:#fff; border:2px solid #e2e8f0; border-radius:12px; padding:10px; text-align:center; font-size:15px; font-weight:800; user-select:none; box-shadow:0 3px 10px rgba(0,0,0,.06); }
+    .card { background:#fff; border:2px solid #e2e8f0; border-radius:var(--card-radius); padding:var(--card-pad); text-align:center; font-size:var(--text); font-weight:800; user-select:none; box-shadow:0 3px 10px rgba(0,0,0,.06); }
     .card.small { font-weight:900; }
     .card.tap { cursor:pointer; }
     .card.selected { border-color:#3b82f6; background:#eff6ff; }
@@ -44,6 +73,19 @@
     .modal h2{ margin:0 0 8px; }
     .modal p{ margin:0 0 12px; color:#334155; }
     .btn { border:0; border-radius:10px; padding:10px 14px; font-weight:800; background:#0ea5e9; color:#fff; }
+
+    /* ---------- Compact mode for very short screens ---------- */
+    @media (max-height: 700px) {
+      :root { --gap: 8px; --pad: 8px; --card-pad: 8px; --card-radius: 10px; --text: 14px; }
+      header img { max-height:48px; }
+    }
+    @media (max-height: 620px) {
+      :root { --gap: 6px; --pad: 6px; --card-pad: 6px; --card-radius: 10px; --text: 13px; }
+      header { padding:8px; font-size:12px; }
+      .pill { padding:4px 8px; font-size:12px; }
+      #progressWrap { margin: 0 8px 6px; }
+      .col { grid-auto-rows:minmax(56px, 1fr); }
+    }
   </style>
 </head>
 <body>
@@ -244,6 +286,17 @@
         test.src = candidates[i] + '?probe=' + Math.random();
       }
       tryNext(0);
+    })();
+  </script>
+<script>
+    // Auto-compact on very small viewport heights (dynamic)
+    (function(){
+      function applyCompact(){
+        const h = window.innerHeight;
+        document.documentElement.style.setProperty('--text', h < 620 ? '13px' : (h < 700 ? '14px' : '15px'));
+      }
+      window.addEventListener('resize', applyCompact);
+      applyCompact();
     })();
   </script>
 </body>
