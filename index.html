@@ -111,7 +111,8 @@
     <div id="finish" class="overlay" role="dialog" aria-modal="true">
       <div class="modal">
         <h2>🎉 أحسنت!</h2>
-        <p>أنهيت جميع الأزواج. المستوى الحالي: <b id="finalLevel">١</b> – مجموع نقاطك: <b id="finalScore">٠</b></p>
+        <p id="finalDefault">أنهيت جميع الأزواج. المستوى الحالي: <b id="finalLevel">١</b> – مجموع نقاطك: <b id="finalScore">٠</b></p>
+        <p id="finalMessage" style="display:none; font-weight:800; font-size:14px; color:#0f172a;">ممتاز يا بطل لقد انهيت المستوى الثاني بنجاك و نتيجتك ٢٠ / ٢٠</p>
         <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
           <button id="nextLevel" class="btn">المستوى التالي ⮕</button>
           <button id="playAgain" class="btn" style="background:#10b981;">إعادة المستوى</button>
@@ -140,22 +141,62 @@
     ];
 
     // level 2: أعداد عشرية تبدأ بـ ٠٫….. ونفس العدد يُطلب تقريبُه إلى منازل مختلفة
-    function makeLevel2(){
-      // رقم أساسي 0.xyz w (4 منازل) لضمان اختلافات عند التقريب
-      const x = Math.floor(1000 + Math.random()*9000); // 1000..9999
-      const base = x / 10000; // 0.xxxx
-      const baseStr = toHindi(base.toFixed(4));
-      // منازل مختلفة
-      const places = [1,2,3,4,5].slice(0, 6); // نستخدم حتى 5 منازل (تكفي للموبايل)
-      const pairs = [];
-      let id = 100; // معرفات فريدة للمستوى 2
-      for (const dp of [1,2,3,4,5,2]){ // نكرر 2 مرتين لإكمال 6 بطاقات مع تنويع نصّ السؤال
-        const ans = roundTo(base, dp); // كقيمة رقمية بس بنقلبها عرضيًا لاحقًا
-        const q = `قرّب العدد ${baseStr} إلى ${toHindi(dp)} منزلة عشرية`;
-        pairs.push({ id: id++, q, a: toHindi(ans) });
-      }
-      return pairs;
+    function roundSig(num, sig){
+      // Round number to specific significant figures and return string
+      if (num === 0) return '0';
+      const m = Math.pow(10, sig - Math.ceil(Math.log10(Math.abs(num))));
+      const v = Math.round(num * m) / m;
+      // Format with enough decimals to preserve sig figs
+      const digits = Math.max(0, sig - Math.floor(Math.log10(Math.abs(v))) - 1);
+      return v.toFixed(digits);
     }
+
+    function makeLevel2(){
+      // نولّد عدداً أساسياً 0.xxxxxx (٦ منازل) لزيادة تنوّع التقريب
+      // ونضمن أن نواتج التقريب المختلفة تكون مميّزة (بدون تكرار)
+      function build(){
+        const x = Math.floor(100000 + Math.random()*900000); // 100000..999999
+        const base = x / 1_000_000; // 0.xxxxxx
+        const baseStr = toHindi(base.toFixed(6));
+
+        const pairs = [];
+        const answersSet = new Set();
+        let nextId = 200; // معرفات فريدة للمستوى ٢
+
+        // 1) منازل عشرية متعددة (نختار حتى نحصل على 6 قيَم مختلفة قبل SF)
+        const candidatesDP = [1,2,3,4,5,6];
+        for (let dp of candidatesDP){
+          const ans = roundTo(base, dp); // string en-us with '.'
+          if (!answersSet.has(ans)){
+            answersSet.add(ans);
+            const q = `قرّب العدد ${baseStr} إلى ${toHindi(dp)} منزلة عشرية`;
+            pairs.push({ id: nextId++, q, a: toHindi(ans) });
+          }
+          if (pairs.length >= 6) break;
+        }
+
+        // 2) رقمـان معنويان (SF): ٢ و٣ — نضيف بطاقتين إضافيتين
+        const sfs = [2,3];
+        for (let sf of sfs){
+          const ansSF = roundSig(base, sf); // returns with '.'
+          // منع التكرار مع إجابات المنازل العشرية
+          if (!answersSet.has(ansSF)){
+            answersSet.add(ansSF);
+            const q = `قرّب العدد ${baseStr} إلى ${toHindi(sf)} أرقام معنوية`;
+            pairs.push({ id: nextId++, q, a: toHindi(ansSF) });
+          }
+        }
+
+        // نريد على الأقل 8 أزواج (6 منازل عشرية + 2 معنوية). إن لم نصل بسبب التكرار نعيد البناء.
+        return pairs.length >= 8 ? pairs : null;
+      }
+
+      let result = null; let guard = 0;
+      while (!result && guard < 20){ result = build(); guard++; }
+      return result || build();
+    }
+
+    // level 3 (اختياري لاحقًا): ممكن نخليه أعداد مثل ١٢٫٠٠٣٤ مع طلب منازل/أرقام معنوية متنوعة.
 
     // level 3 (اختياري لاحقًا): ممكن نخليه أعداد مثل ١٢٫٠٠٣٤ مع طلب منازل/أرقام معنوية متنوعة.
 
@@ -185,9 +226,23 @@
     }
 
     function showFinish(){
-      $('#finalLevel').textContent = toHindi(currentLevel);
-      $('#finalScore').textContent = toHindi(score);
-      $('#finish').classList.add('show');
+      // افتراضيًا نعرض الملخص العام
+      const def = document.getElementById('finalDefault');
+      const msg = document.getElementById('finalMessage');
+
+      if (currentLevel === 2){
+        // شاشة خاصة بالمستوى الثاني كما طَلَبتَ
+        def.style.display = 'none';
+        msg.textContent = 'ممتاز يا بطل لقد انهيت المستوى الثاني بنجاك و نتيجتك ٢٠ / ٢٠';
+        msg.style.display = 'block';
+      } else {
+        // المستويات الأخرى – الملخص الاعتيادي
+        def.style.display = 'block';
+        msg.style.display = 'none';
+        document.getElementById('finalLevel').textContent = toHindi(currentLevel);
+        document.getElementById('finalScore').textContent = toHindi(score);
+      }
+      document.getElementById('finish').classList.add('show');
     }
 
     function tryMatch(){
@@ -250,6 +305,8 @@
       currentLevel = level;
       matched.clear(); score = 0; resetSelection();
       PAIRS = (level === 1) ? LEVEL1.slice() : makeLevel2();
+      // تحديث التقدّم ليعكس عدد الأزواج الجديد (قد يكون ٨ في المستوى ٢)
+      document.getElementById('progress').style.width = '0%';
       updateHUD(); render();
       $('#finish').classList.remove('show');
     }
