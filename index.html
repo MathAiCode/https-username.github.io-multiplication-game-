@@ -226,22 +226,34 @@
     }
 
     function showFinish(){
-      // افتراضيًا نعرض الملخص العام
       const def = document.getElementById('finalDefault');
       const msg = document.getElementById('finalMessage');
 
+      // تحديث الملخص العام دائماً
+      document.getElementById('finalLevel').textContent = toHindi(currentLevel);
+      document.getElementById('finalScore').textContent = toHindi(score);
+
       if (currentLevel === 2){
-        // شاشة خاصة بالمستوى الثاني كما طَلَبتَ
         def.style.display = 'none';
         msg.textContent = 'ممتاز يا بطل لقد انهيت المستوى الثاني بنجاك و نتيجتك ٢٠ / ٢٠';
         msg.style.display = 'block';
       } else {
-        // المستويات الأخرى – الملخص الاعتيادي
         def.style.display = 'block';
         msg.style.display = 'none';
-        document.getElementById('finalLevel').textContent = toHindi(currentLevel);
-        document.getElementById('finalScore').textContent = toHindi(score);
       }
+      document.getElementById('finish').classList.add('show');
+
+      // انتقال تلقائي من المستوى 1 إلى 2 بعد ثانية (اختياري بجانب الزر)
+      if (currentLevel === 1){
+        setTimeout(()=>{
+          const overlay = document.getElementById('finish');
+          if (overlay.classList.contains('show')){
+            overlay.classList.remove('show');
+            nextLevel();
+          }
+        }, 1000);
+      }
+    }
       document.getElementById('finish').classList.add('show');
     }
 
@@ -303,12 +315,14 @@
 
     function startLevel(level){
       currentLevel = level;
-      matched.clear(); score = 0; resetSelection();
+      matched.clear();
+      score = 0;
+      resetSelection();
       PAIRS = (level === 1) ? LEVEL1.slice() : makeLevel2();
-      // تحديث التقدّم ليعكس عدد الأزواج الجديد (قد يكون ٨ في المستوى ٢)
       document.getElementById('progress').style.width = '0%';
-      updateHUD(); render();
-      $('#finish').classList.remove('show');
+      document.getElementById('finish').classList.remove('show');
+      updateHUD();
+      render();
     }
 
     function nextLevel(){
@@ -321,7 +335,10 @@
     // أزرار
     $('#restart').addEventListener('click', ()=>startLevel(currentLevel));
     $('#playAgain').addEventListener('click', ()=>startLevel(currentLevel));
-    $('#nextLevel').addEventListener('click', ()=>{ $('#finish').classList.remove('show'); nextLevel(); });
+    $('#nextLevel').addEventListener('click', ()=>{
+      document.getElementById('finish').classList.remove('show');
+      nextLevel();
+    }); nextLevel(); });
 
     // تشغيل أولي
     startLevel(1);
