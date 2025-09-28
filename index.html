@@ -391,6 +391,31 @@
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind); else bind();
   })();
+  // --- حارس أمان لإظهار بطاقات المستوى الأول إذا اختفت بطريق الخطأ ---
+  window.addEventListener('error', (e)=>{ console.error('JS Error:', e.message); });
+  (function safety(){
+    try{
+      // تأكد من إغلاق نافذة النهاية
+      const overlay = document.getElementById('finish');
+      if (overlay) overlay.classList.remove('show');
+      // إذا لم تُجهَّز الأزواج لأي سبب، ارجع للمستوى ١ وأعد الرسم
+      if (!window.PAIRS || !Array.isArray(PAIRS) || !PAIRS.length){
+        if (Array.isArray(window.LEVEL1)) { window.PAIRS = window.LEVEL1.slice(); }
+      }
+      // إذا لم تُنشأ البطاقات في العمودين، أجرِ render يدويًا
+      const qCol = document.getElementById('questionsCol');
+      const aCol = document.getElementById('answersCol');
+      if (qCol && aCol && qCol.children.length === 0 && typeof window.render === 'function'){
+        window.render();
+      }
+      // إعادة ربط زر المستوى التالي احتياطًا
+      const nl = document.getElementById('nextLevel');
+      if (nl && !nl.dataset.bound){
+        nl.addEventListener('click', ()=>{ const ov = document.getElementById('finish'); if (ov) ov.classList.remove('show'); if (typeof window.nextLevel==='function') window.nextLevel(); });
+        nl.dataset.bound = '1';
+      }
+    }catch(err){ console.error('Safety init failed:', err); }
+  })();
 </script>
 <script>
     // Auto-compact on very small viewport heights (dynamic)
